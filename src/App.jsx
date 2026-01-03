@@ -86,12 +86,47 @@ const App = () => {
         }
     };
 
-    const drawFortune = () => {
+    // AI 抽籤邏輯
+    const [isLoading, setIsLoading] = useState(false);
+
+    const drawFortune = async () => {
+        if (isLoading) return;
+
+        setIsLoading(true);
         playSound('magic');
-        const randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
-        setFortune(randomFortune);
-        setIsFlipped(true);
-        createParticles();
+        setIsFlipped(true); // 先翻轉顯示Loading
+
+        // 隨機選一個「主題」給 AI (讓每次稍微不同)
+        const topics = ["今年的財運", "今年的桃花運", "今年的事業運", "今年的健康運", "今年的貴人運"];
+        const topic = topics[Math.floor(Math.random() * topics.length)];
+
+        // 預設靜態籤 (Fallback)
+        const randomStatic = fortunes[Math.floor(Math.random() * fortunes.length)];
+
+        try {
+            // 呼叫 Cloudflare Function (本地開發時需用 wrangler 或直接 fallback)
+            const res = await fetch('/api/fortune', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setFortune({
+                    ...randomStatic, // 沿用靜態的圖標和標題風格
+                    desc: data.fortune // 替換成 AI 的文字
+                });
+            } else {
+                throw new Error("API Error");
+            }
+        } catch (e) {
+            console.error("AI Fetch Failed, using static", e);
+            setFortune(randomStatic);
+        } finally {
+            createParticles();
+            setIsLoading(false);
+        }
     };
 
     const createParticles = () => {
@@ -150,6 +185,7 @@ const App = () => {
                                         onClick={() => {
                                             playSound('pop');
                                             setIsFlipped(false);
+                                            setFortune(null); // Reset
                                         }}
                                         className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-400 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 font-bold"
                                     >
@@ -169,6 +205,12 @@ const App = () => {
                                     </button>
                                 </div>
                             </>
+                        )}
+                        {!fortune && isLoading && (
+                            <div className="flex flex-col items-center animate-pulse">
+                                <Sparkles className="w-12 h-12 text-pink-400 mb-4 animate-spin" />
+                                <p className="text-slate-500 font-bold">AI 財神爺正在算...</p>
+                            </div>
                         )}
                     </div>
                 </div>
