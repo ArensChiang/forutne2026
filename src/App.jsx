@@ -20,7 +20,7 @@ const App = () => {
     const cardRef = useRef(null);
     const [userName, setUserName] = useState('');
 
-    // 擴充後的 12 個年度好運關鍵字
+    // 擴充後的 20 個年度好運關鍵字
     const fortunes = [
         { title: "荷包爆滿", icon: <Coins className="text-yellow-400" />, desc: "2026 財神爺住你家，買什麼都中獎，隨便花都花不完！" },
         { title: "吃喝不胖", icon: <Utensils className="text-orange-400" />, desc: "火鍋宵夜隨便點，體重計永遠對你溫柔。這就是魔法！" },
@@ -33,8 +33,30 @@ const App = () => {
         { title: "小人退散", icon: <ShieldCheck className="text-cyan-400" />, desc: "自帶保護罩，所有不順心、壞運氣通通彈開，貴人運爆發。" },
         { title: "健康滿分", icon: <Activity className="text-red-400" />, desc: "體力像電池一樣充沛，吃得好睡得香，渾身充滿正能量！" },
         { title: "萬事如意", icon: <Smile className="text-yellow-500" />, desc: "想什麼來什麼，事情發展總比預期的還順利，笑容停不下來。" },
-        { title: "顏值巔峰", icon: <Sparkles className="text-rose-400" />, desc: "素顏也好看，隨便穿都時尚。2026 年你就是這條街最正/帥的！" }
+        { title: "顏值巔峰", icon: <Sparkles className="text-rose-400" />, desc: "素顏也好看，隨便穿都時尚。2026 年你就是這條街最正/帥的！" },
+        // 新增的吉祥籤 (會計師事務所風格)
+        { title: "帳帳平衡", icon: <Coins className="text-green-400" />, desc: "借貸永遠平衡，報表一次過關，主管讚不絕口！" },
+        { title: "審計通過", icon: <ShieldCheck className="text-blue-500" />, desc: "查帳順利無異常，所有數字都對得剛剛好，年終獎金 Double！" },
+        { title: "客戶加倍", icon: <Gift className="text-pink-400" />, desc: "業績翻倍成長，客戶主動找上門，訂單接到手軟！" },
+        { title: "報稅順利", icon: <Activity className="text-emerald-500" />, desc: "申報零錯誤，退稅秒到帳，稅務機關還寄感謝函給你！" },
+        { title: "升官發財", icon: <Sparkles className="text-amber-500" />, desc: "升職加薪不是夢，2026 職場路一路開綠燈！" },
+        { title: "貴人相助", icon: <Heart className="text-red-400" />, desc: "遇到困難總有人伸出援手，處處遇貴人，事業愛情兩得意！" },
+        { title: "學業進步", icon: <Lightbulb className="text-indigo-500" />, desc: "考試運爆棚，讀什麼都記得住，證照手到擒來！" },
+        { title: "家庭和樂", icon: <Smile className="text-orange-500" />, desc: "家人健康平安，相處融洽溫馨，每天都是幸福的日子！" },
     ];
+
+    // 6 種御守風格 (參考日本御守配色)
+    const omamoriStyles = [
+        { name: "祈願藍", bg: "linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)", accent: "#60a5fa", knotColor: "#fbbf24" },
+        { name: "合格綠", bg: "linear-gradient(135deg, #166534 0%, #14532d 100%)", accent: "#4ade80", knotColor: "#fbbf24" },
+        { name: "學業藍", bg: "linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)", accent: "#7dd3fc", knotColor: "#f87171" },
+        { name: "開運紅", bg: "linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%)", accent: "#fca5a5", knotColor: "#fbbf24" },
+        { name: "招財黃", bg: "linear-gradient(135deg, #eab308 0%, #a16207 100%)", accent: "#fef08a", knotColor: "#ef4444" },
+        { name: "結緣紫", bg: "linear-gradient(135deg, #7e22ce 0%, #581c87 100%)", accent: "#c4b5fd", knotColor: "#fbbf24" },
+    ];
+
+    // Current Omamori Style State
+    const [currentStyle, setCurrentStyle] = useState(omamoriStyles[3]); // Default: Red
 
     // 簡單的音效合成器 (不需外部檔案)
     const playSound = (type) => {
@@ -102,6 +124,10 @@ const App = () => {
         playSound('magic');
         setIsFlipped(true); // 先翻轉顯示Loading
 
+        // 隨機選一個御守風格
+        const randomStyle = omamoriStyles[Math.floor(Math.random() * omamoriStyles.length)];
+        setCurrentStyle(randomStyle);
+
         // 隨機選一個「主題」給 AI (讓每次稍微不同)
         const topics = ["今年的財運", "今年的桃花運", "今年的事業運", "今年的健康運", "今年的貴人運"];
         const topic = topics[Math.floor(Math.random() * topics.length)];
@@ -110,7 +136,8 @@ const App = () => {
         const randomStatic = fortunes[Math.floor(Math.random() * fortunes.length)];
 
         try {
-            // 呼叫 Cloudflare Function (本地開發時需用 wrangler 或直接 fallback)
+            console.log("Fetching fortune...");
+            // 呼叫 Cloudflare Function
             const res = await fetch('/api/fortune', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -119,12 +146,15 @@ const App = () => {
 
             if (res.ok) {
                 const data = await res.json();
+                console.log("API Success", data);
                 setFortune({
                     ...randomStatic, // 沿用靜態的圖標和標題風格
                     desc: data.fortune // 替換成 AI 的文字
                 });
             } else {
-                throw new Error("API Error");
+                const errData = await res.json();
+                console.error("API Error Details:", errData);
+                throw new Error(errData.details || "Unknown API Error");
             }
         } catch (e) {
             console.error("AI Fetch Failed, using static", e);
@@ -189,10 +219,10 @@ const App = () => {
             <div className="absolute bottom-[-5%] right-[-5%] w-[50%] h-[50%] bg-orange-100/50 blur-[100px] rounded-full"></div>
 
             <div className="max-w-md w-full relative z-10">
-                <div className={`relative transition-all duration-700 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`} style={{ perspective: '1200px' }}>
+                <div className={`relative transition-all duration-700 preserve-3d h-[500px] ${isFlipped ? 'rotate-y-180' : ''}`} style={{ perspective: '1200px' }}>
 
                     {/* 正面 (3D Scene) */}
-                    <div className={`relative w-full h-[500px] backface-hidden ${isFlipped ? 'hidden' : 'block'}`}>
+                    <div className={`relative w-full h-full backface-hidden ${isFlipped ? 'hidden' : 'block'}`}>
                         <div className="absolute inset-0 flex items-center justify-center">
                             <Experience onCoinClick={drawFortune} />
                         </div>
@@ -204,50 +234,81 @@ const App = () => {
                         </div>
                     </div>
 
-                    {/* 背面 */}
-                    <div className={`absolute inset-0 bg-white border-4 border-pink-100 rounded-[2.5rem] p-10 shadow-2xl backface-hidden flex flex-col items-center justify-center text-center transition-all duration-700 ${isFlipped ? 'visible rotate-y-180' : 'invisible'}`}>
-                        {fortune && (
-                            <>
-                                <div className="mb-6 relative">
-                                    <div className="w-24 h-24 bg-gradient-to-br from-pink-50 to-orange-50 rounded-3xl flex items-center justify-center border-2 border-pink-100 shadow-inner">
-                                        {React.cloneElement(fortune.icon, { size: 50 })}
-                                    </div>
-                                    <div className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-sm">LUCKY</div>
-                                </div>
+                    {/* 背面 - 御守風格 (Omamori Style) */}
+                    <div
+                        className={`absolute inset-0 backface-hidden flex flex-col items-center text-center transition-all duration-700 ${isFlipped ? 'visible rotate-y-180' : 'invisible'}`}
+                        style={{
+                            clipPath: "polygon(50% 0%, 100% 15%, 100% 100%, 0% 100%, 0% 15%)", // 御守形狀
+                            background: currentStyle.bg, // 動態背景色
+                            boxShadow: `0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 0 0 4px ${currentStyle.knotColor}`, // 動態內金邊
+                        }}
+                    >
+                        {/* 御守材質紋理 (CSS Pattern) */}
+                        <div className="absolute inset-4 border-2 border-dashed rounded-b-3xl z-0 pointer-events-none" style={{ borderColor: `${currentStyle.accent}50` }}></div>
+                        <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{
+                            backgroundImage: `radial-gradient(${currentStyle.knotColor} 1px, transparent 1px)`,
+                            backgroundSize: "12px 12px"
+                        }}></div>
 
-                                <p className="text-pink-400 font-bold mb-1 uppercase tracking-widest text-sm">2026 你將會...</p>
-                                <h3 className="text-4xl font-black text-slate-800 mb-4">{fortune.title}</h3>
-                                <div className="w-16 h-1.5 bg-gradient-to-r from-pink-300 to-orange-300 rounded-full mb-6"></div>
-                                <p className="text-slate-600 text-lg mb-8 leading-relaxed font-medium px-2">
-                                    「{fortune.desc}」
-                                </p>
-
-                                <div className="flex gap-4 w-full">
-                                    <button
-                                        onClick={() => {
-                                            playSound('pop');
-                                            setIsFlipped(false);
-                                            setFortune(null); // Reset
-                                        }}
-                                        className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-400 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 font-bold"
-                                    >
-                                        <RefreshCw size={18} /> 重抽
-                                    </button>
-                                    <button
-                                        className="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 font-bold"
-                                        onClick={handleShare}
-                                    >
-                                        <Send size={18} /> 下載賀卡
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                        {!fortune && isLoading && (
-                            <div className="flex flex-col items-center animate-pulse">
-                                <Sparkles className="w-12 h-12 text-pink-400 mb-4 animate-spin" />
-                                <p className="text-slate-500 font-bold">AI 財神爺正在算...</p>
+                        {/* 繩結 (SVG Knot) */}
+                        <div className="relative z-10 w-full flex justify-center mt-6 mb-4">
+                            <div className="w-16 h-16 drop-shadow-md" style={{ color: currentStyle.knotColor }}>
+                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+                                    <path d="M12 2C13.1 2 14 2.9 14 4V6H16C17.1 6 18 6.9 18 8V10H20C21.1 10 22 10.9 22 12C22 13.1 21.1 14 20 14H18V16C18 17.1 17.1 18 16 18H14V20C14 21.1 13.1 22 12 22C10.9 22 10 21.1 10 20V18H8C6.9 18 6 17.1 6 16V14H4C2.9 14 2 13.1 2 12C2 10.9 2.9 10 4 10H6V8C6 6.9 6.9 6 8 6H10V4C10 2.9 10.9 2 12 2ZM12 6C10.9 6 10 6.9 10 8V10H8C6.9 10 6 10.9 6 12C6 13.1 6.9 14 8 14H10V16C10 17.1 10.9 18 12 18C13.1 18 14 17.1 14 16V14H16C17.1 14 18 13.1 18 12C18 10.9 17.1 10 16 10H14V8C14 6.9 13.1 6 12 6Z" fillRule="evenodd" clipRule="evenodd" />
+                                </svg>
                             </div>
-                        )}
+                        </div>
+
+
+                        <div className="relative z-10 px-6 flex flex-col items-center justify-between h-full pb-8 w-full">
+                            {fortune && (
+                                <>
+                                    <div className="mb-4 relative">
+                                        <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-yellow-500/50 shadow-inner">
+                                            {React.cloneElement(fortune.icon, { size: 40, className: "text-yellow-200" })}
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center mb-6">
+                                        <p className="text-yellow-500/80 font-bold mb-1 tracking-[0.3em] text-xs">Arens CPA</p>
+                                        <h3 className="text-3xl font-black text-yellow-50 mb-2" style={{ writingMode: 'horizontal-tb', letterSpacing: '0.15em' }}>
+                                            {fortune.title}
+                                        </h3>
+                                    </div>
+
+                                    <div className="bg-white/95 rounded-lg p-4 shadow-lg w-full mb-4 ring-2 ring-yellow-500/20">
+                                        <p className="text-slate-800 text-base leading-relaxed font-serif font-medium text-left">
+                                            {fortune.desc}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex gap-3 w-full mt-auto">
+                                        <button
+                                            onClick={() => {
+                                                playSound('pop');
+                                                setIsFlipped(false);
+                                                setFortune(null);
+                                            }}
+                                            className="flex-1 bg-red-900/50 hover:bg-red-900/70 text-red-100 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 font-bold text-sm border border-red-800"
+                                        >
+                                            <RefreshCw size={14} /> 重抽
+                                        </button>
+                                        <button
+                                            className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1 font-bold text-sm border border-yellow-400"
+                                            onClick={handleShare}
+                                        >
+                                            <Send size={14} /> 收藏
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                            {!fortune && isLoading && (
+                                <div className="flex flex-col items-center animate-pulse mt-10">
+                                    <Sparkles className="w-12 h-12 text-yellow-400 mb-4 animate-spin" />
+                                    <p className="text-yellow-100 font-bold tracking-widest">祈福演運中...</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -255,7 +316,8 @@ const App = () => {
                 <div className="mt-8 text-center px-4">
                     <p className="text-pink-300 font-medium text-sm">建誠聯合會計師事務所 祝你新年快樂 ✨</p>
                     <p className="text-slate-300 text-[10px] mt-2 leading-tight uppercase tracking-widest">
-                        May your 2026 be as wonderful as you are.
+                        May your 2026 be as wonderful as you are. <br />
+                        <span className="text-pink-200/50">v2.0 Omamori Edition</span>
                     </p>
                 </div>
             </div>
