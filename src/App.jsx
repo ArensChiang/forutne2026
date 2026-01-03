@@ -1,15 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Sparkles, Send, Gift, RefreshCw, Beer, Heart, Plane,
     Utensils, Coins, Moon, Clock, Lightbulb, ShieldCheck,
     Activity, Smile
 } from 'lucide-react';
 import { Experience } from './components/Experience';
+import { ShareCard } from './components/ShareCard';
+import html2canvas from 'html2canvas';
 
 const App = () => {
     const [isFlipped, setIsFlipped] = useState(false);
     const [fortune, setFortune] = useState(null);
     const [particles, setParticles] = useState([]);
+
+    // AI Loading State
+    const [isLoading, setIsLoading] = useState(false);
+
+    // E-Card Reference and State
+    const cardRef = useRef(null);
+    const [userName, setUserName] = useState('');
 
     // 擴充後的 12 個年度好運關鍵字
     const fortunes = [
@@ -86,9 +95,6 @@ const App = () => {
         }
     };
 
-    // AI 抽籤邏輯
-    const [isLoading, setIsLoading] = useState(false);
-
     const drawFortune = async () => {
         if (isLoading) return;
 
@@ -140,8 +146,44 @@ const App = () => {
         setParticles(newParticles);
     };
 
+    const handleShare = async () => {
+        if (!fortune) return;
+        playSound('success');
+
+        const name = prompt("請輸入您的大名 (將顯示在賀卡上):", "幸運兒");
+        // Update Ref immediately? No, prompt is synchronous but state update is async.
+        // We need the DOM to update first.
+        const finalName = name || "幸運兒";
+        setUserName(finalName);
+
+        // Short delay to allow React to render the name into the hidden ShareCard
+        setTimeout(async () => {
+            if (cardRef.current) {
+                try {
+                    const canvas = await html2canvas(cardRef.current, {
+                        scale: 2, // Retina quality
+                        backgroundColor: null,
+                    });
+
+                    const image = canvas.toDataURL("image/png");
+                    const link = document.createElement('a');
+                    link.href = image;
+                    link.download = `2026新年好運籤-${finalName}.png`;
+                    link.click();
+                } catch (err) {
+                    console.error("Card generation failed", err);
+                    alert("製作賀卡失敗，請稍後再試！");
+                }
+            }
+        }, 100);
+    };
+
     return (
         <div className="min-h-screen bg-[#fff5f5] flex items-center justify-center p-4 font-sans text-slate-800 overflow-hidden relative">
+
+            {/* 隱藏的賀卡 (用於生成圖片) */}
+            <ShareCard ref={cardRef} fortune={fortune} userName={userName || "幸運兒"} />
+
             {/* 溫暖的背景裝飾 */}
             <div className="absolute top-[-5%] left-[-5%] w-[50%] h-[50%] bg-pink-200/40 blur-[100px] rounded-full"></div>
             <div className="absolute bottom-[-5%] right-[-5%] w-[50%] h-[50%] bg-orange-100/50 blur-[100px] rounded-full"></div>
@@ -193,15 +235,9 @@ const App = () => {
                                     </button>
                                     <button
                                         className="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 font-bold"
-                                        onClick={() => {
-                                            playSound('success');
-                                            const btn = document.activeElement;
-                                            const originalText = btn.innerHTML;
-                                            btn.innerHTML = '已截圖分享 ✨';
-                                            setTimeout(() => btn.innerHTML = originalText, 2000);
-                                        }}
+                                        onClick={handleShare}
                                     >
-                                        <Send size={18} /> 分享
+                                        <Send size={18} /> 下載賀卡
                                     </button>
                                 </div>
                             </>
