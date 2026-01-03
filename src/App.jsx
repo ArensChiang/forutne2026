@@ -4,6 +4,7 @@ import {
     Utensils, Coins, Moon, Clock, Lightbulb, ShieldCheck,
     Activity, Smile
 } from 'lucide-react';
+import { Experience } from './components/Experience';
 
 const App = () => {
     const [isFlipped, setIsFlipped] = useState(false);
@@ -113,34 +114,16 @@ const App = () => {
             <div className="max-w-md w-full relative z-10">
                 <div className={`relative transition-all duration-700 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`} style={{ perspective: '1200px' }}>
 
-                    {/* 正面 */}
-                    <div className={`bg-white/80 backdrop-blur-xl border-4 border-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(255,182,193,0.3)] backface-hidden ${isFlipped ? 'invisible' : 'visible'}`}>
-                        <div className="flex justify-center mb-6">
-                            <div className="bg-pink-100 p-4 rounded-full">
-                                <Beer className="text-pink-500 w-10 h-10 animate-bounce" />
-                            </div>
+                    {/* 正面 (3D Scene) */}
+                    <div className={`relative w-full h-[500px] backface-hidden ${isFlipped ? 'hidden' : 'block'}`}>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Experience onCoinClick={drawFortune} />
                         </div>
-
-                        <div className="text-center">
-                            <p className="text-pink-500 font-bold tracking-[0.2em] mb-2 uppercase text-sm">Welcome 2026</p>
-                            <h1 className="text-6xl font-black mb-6 italic text-transparent bg-clip-text bg-gradient-to-br from-pink-500 to-orange-400">
+                        <div className="absolute bottom-10 left-0 right-0 text-center pointer-events-none">
+                            <h1 className="text-4xl font-black mb-2 italic text-transparent bg-clip-text bg-gradient-to-br from-pink-500 to-orange-400">
                                 2026
                             </h1>
-                            <h2 className="text-2xl font-bold mb-4 text-slate-700 leading-tight">
-                                新的一年，<br />也要一起開開心心！
-                            </h2>
-
-                            <p className="text-slate-500 mb-8 leading-relaxed font-medium">
-                                辛苦了！這一年我們都要更好。<br />點擊下方按鈕，測測你的年度運勢 ✨
-                            </p>
-
-                            <button
-                                onClick={drawFortune}
-                                className="w-full bg-gradient-to-r from-pink-500 to-orange-400 hover:scale-105 active:scale-95 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 group text-lg"
-                            >
-                                <Gift size={24} className="group-hover:rotate-12 transition-transform" />
-                                開啟我的 2026 好運氣
-                            </button>
+                            <p className="text-pink-500 font-bold tracking-widest animate-pulse">點擊金幣抽籤</p>
                         </div>
                     </div>
 
