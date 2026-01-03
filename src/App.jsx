@@ -128,7 +128,7 @@ const App = () => {
 
                 {/* 底部 */}
                 <div className="mt-8 text-center px-4">
-                    <p className="text-pink-300 font-medium text-sm">你的好友 [你的名字] 祝你新年快樂 ✨</p>
+                    <p className="text-pink-300 font-medium text-sm">建誠聯合會計師事務所 祝你新年快樂 ✨</p>
                     <p className="text-slate-300 text-[10px] mt-2 leading-tight uppercase tracking-widest">
                         May your 2026 be as wonderful as you are.
                     </p>
