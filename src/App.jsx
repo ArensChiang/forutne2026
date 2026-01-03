@@ -26,7 +26,67 @@ const App = () => {
         { title: "顏值巔峰", icon: <Sparkles className="text-rose-400" />, desc: "素顏也好看，隨便穿都時尚。2026 年你就是這條街最正/帥的！" }
     ];
 
+    // 簡單的音效合成器 (不需外部檔案)
+    const playSound = (type) => {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+
+        if (type === 'magic') {
+            // 抽籤音效：閃亮的琶音
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.start(now);
+            osc.stop(now + 0.5);
+
+            // 疊加第二層聲音
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(800, now);
+            osc2.frequency.linearRampToValueAtTime(1500, now + 0.2);
+            gain2.gain.setValueAtTime(0.2, now);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            osc2.start(now);
+            osc2.stop(now + 0.4);
+
+        } else if (type === 'pop') {
+            // 點擊音效
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+
+        } else if (type === 'success') {
+            // 成功/分享音效
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.setValueAtTime(800, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        }
+    };
+
     const drawFortune = () => {
+        playSound('magic');
         const randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
         setFortune(randomFortune);
         setIsFlipped(true);
@@ -104,7 +164,10 @@ const App = () => {
 
                                 <div className="flex gap-4 w-full">
                                     <button
-                                        onClick={() => setIsFlipped(false)}
+                                        onClick={() => {
+                                            playSound('pop');
+                                            setIsFlipped(false);
+                                        }}
                                         className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-400 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 font-bold"
                                     >
                                         <RefreshCw size={18} /> 重抽
@@ -112,6 +175,7 @@ const App = () => {
                                     <button
                                         className="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 font-bold"
                                         onClick={() => {
+                                            playSound('success');
                                             const btn = document.activeElement;
                                             const originalText = btn.innerHTML;
                                             btn.innerHTML = '已截圖分享 ✨';
