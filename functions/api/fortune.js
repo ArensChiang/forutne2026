@@ -30,99 +30,54 @@ export async function onRequestPost({ request, env }) {
       請直接回覆文字內容，不要有 markdown 格式。
     `;
 
-        const models = [
-            "gemini-pro", // Try legacy model
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-001",
-            "gemini-1.5-flash-8b"
-        ];
+        // Ollama API Configuration
+        const OLLAMA_API_URL = "https://ollama.chienchen.net.tw/api/generate";
+        const OLLAMA_MODEL = "qwen3:8b";
 
-        let lastError = null;
-        let connectivityCheck = "pending";
-        let permissionCheck = "skipped";
-        const debugInfo = [];
+        const ollamaPayload = {
+            model: OLLAMA_MODEL,
+            prompt: prompt,
+            stream: false,
+            options: {
+                temperature: 0.7,
+                num_predict: 200
+            }
+        };
 
-        // 1. Connectivity Check & POST Method Test
         try {
-            const test = await fetch("https://httpbin.org/post", {
+            console.log(`Calling Ollama at ${OLLAMA_API_URL} with model ${OLLAMA_MODEL}`);
+
+            const response = await fetch(OLLAMA_API_URL, {
                 method: 'POST',
-                headers: { 'User-Agent': 'FortuneApp/2.0' },
-                body: JSON.stringify({ test: 'data' })
-            });
-            if (test.ok) {
-                const binData = await test.json();
-                connectivityCheck = `ok. method: ${binData.method || 'UNKNOWN'}`;
-            } else {
-                connectivityCheck = `failed: ${test.status}`;
-            }
-        } catch (e) {
-            connectivityCheck = `error: ${e.message}`;
-        }
-
-        // 2. Try POST generation
-        for (const model of models) {
-            // Use v1 for stable/legacy, v1beta for others
-            const version = (model.includes('1.5') || model === 'gemini-pro') ? 'v1' : 'v1beta';
-            const targetUrl = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`;
-
-            const reqBody = JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'FortuneApp/2.0 (Cloudflare)'
+                },
+                body: JSON.stringify(ollamaPayload)
             });
 
-            try {
-                const response = await fetch(targetUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Content-Length': new TextEncoder().encode(reqBody).length.toString(),
-                        'User-Agent': 'FortuneApp/2.0 (Cloudflare)',
-                        'Referer': 'https://fortune2026-pro.pages.dev/'
-                    },
-                    body: reqBody
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.candidates && data.candidates[0].content) {
-                        const fortuneText = data.candidates[0].content.parts[0].text;
-                        return new Response(JSON.stringify({ fortune: fortuneText }), {
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                    }
+            if (response.ok) {
+                const data = await response.json();
+                if (data.response) {
+                    return new Response(JSON.stringify({ fortune: data.response }), {
+                        headers: { 'Content-Type': 'application/json' }
+                    });
                 } else {
-                    const errText = await response.text();
-                    debugInfo.push(`POST ${model} Failed: (${version}) ${response.status} - ${errText.substring(0, 100)}`);
-                    lastError = errText;
+                    throw new Error("Invalid response format from Ollama");
                 }
-            } catch (e) {
-                debugInfo.push(`POST ${model} Error: ${e.message}`);
-                lastError = e.message;
-            }
-        }
-
-        // 3. Deep Debug: If all failed, check GET models permissions
-        try {
-            const permRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
-                headers: { 'User-Agent': 'FortuneApp/2.0 (Cloudflare)' }
-            });
-            if (permRes.ok) {
-                const permData = await permRes.json();
-                permissionCheck = `Success, found ${permData.models?.length || 0} models`;
             } else {
-                permissionCheck = `Failed: ${permRes.status} - ${await permRes.text()}`;
+                const errText = await response.text();
+                throw new Error(`Ollama API Failed: ${response.status} - ${errText.substring(0, 100)}`);
             }
-        } catch (e) {
-            permissionCheck = `Error: ${e.message}`;
-        }
 
-        return new Response(JSON.stringify({
-            error: "All models failed",
-            details: lastError,
-            connectivity: connectivityCheck,
-            permissionCheck: permissionCheck,
-            debugLog: debugInfo
-        }), { status: 502 });
+        } catch (e) {
+            console.error("[Ollama Error]", e);
+            return new Response(JSON.stringify({
+                error: "Fortune Generation Failed",
+                details: e.message,
+                suggestion: "Please check if your Cloudflare Tunnel is pointing to http://192.168.8.9:11434"
+            }), { status: 502 });
+        }
 
     } catch (err) {
         console.error("[Function Error]", err);
